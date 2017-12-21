@@ -1,6 +1,7 @@
 <script src="//unpkg.com/vue"></script>
 
 <script src="//cdn.jsdelivr.net/npm/axios@0.12.0/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lodash@4.13.1/lodash.min.js"></script>
 
 <style>
     .row {
@@ -34,7 +35,7 @@
 
 <center>
     <div id="activity">
-        <h1 v-if="user_name">{{ user_name }}</h1>
+        <div><input v-model="user_name"></div>
         <div v-if="user_email">{{ user_email }}</div>
         <div v-if="blocks" v-for="block_week in blocks" class="row">
             <div v-if="block_week.blocks" v-for="block in block_week.blocks" class="column">
@@ -58,19 +59,26 @@
         },
         watch: {
             user_name: function (new_user_name) {
+                this.user_email = 'Waiting for you to stop typing...';
                 this.get_blocks(new_user_name);
             }
         },
         methods: {
-            get_blocks: function (new_user_name = activityVue.user_name) {
-                axios.get('/' + new_user_name)
-                    .then(response => {
-                        activityVue.blocks = response.data;
-                    })
-                    .catch(e => {
-                        console.log(e);
-                    });
-            }
+            get_blocks: _.debounce(
+                function (new_user_name = activityVue.user_name) {
+                    axios.get('/' + new_user_name)
+                        .then(response => {
+                            this.blocks = response.data;
+                            this.user_email = '---';
+                        })
+                        .catch(e => {
+                            this.user_email = e;
+                            this.blocks = null;
+                            console.log(e);
+                        });
+                },
+                1000
+            )
         }
      });
 
